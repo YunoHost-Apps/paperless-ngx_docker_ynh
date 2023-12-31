@@ -10,6 +10,7 @@ build: ## Update/Build docker services
 	./compose.sh build --pull
 
 up: build ## Start docker containers
+	mkdir -p __DATA_DIR__/volumes/postgresql-data/
 	./compose.sh up -d
 	$(MAKE) logs
 
@@ -25,6 +26,12 @@ ps: ## List containers
 
 logs: ## Display and follow docker logs
 	./compose.sh logs --tail=500 --follow
+
+logs-app: ## Display and follow docker logs
+	./compose.sh logs --tail=500 --follow app
+
+system-prune:  ## Cleanup docker by call "system prune"
+	docker system prune --force --all --filter until=336h
 
 ###################################################################################################
 
@@ -48,5 +55,5 @@ systemd-restart:  ## Status of the app SystemD services
 
 ###################################################################################################
 
-.PHONY: help build up down restart ps logs shell-app run-shell-app shell-postgres systemd-status systemd-restart
+.PHONY: help build up down restart ps logs system-prune shell-app run-shell-app shell-postgres systemd-status systemd-restart
 

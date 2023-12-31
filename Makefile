@@ -23,5 +23,11 @@ local-test:  ## Created a "local test" file structure
 
 ###################################################################################################
 
-.PHONY: help setup-venv update
+system-prune:  ## Cleanup docker by call "system prune"
+	docker system prune --force --all --filter until=336h
+
+
+###################################################################################################
+
+.PHONY: help setup-venv update list-ynh-add-config local-test system-prune
 
