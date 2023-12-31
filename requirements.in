@@ -1,0 +1,5 @@
+# https://github.com/jedie/django_example
+django_example
+
+# https://github.com/YunoHost-Apps/django_yunohost_integration
+django_yunohost_integration[ynh]

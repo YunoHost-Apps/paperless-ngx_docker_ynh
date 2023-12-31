@@ -1,0 +1,94 @@
+#!/bin/bash
+
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+# Install parameters are automatically saved as settings
+#
+# Settings are automatically loaded as bash variables
+# in every app script context, therefore typically these will exist:
+# - $domain
+# - $path
+# - $language
+# ... etc
+#
+# Resources defined in the manifest are provisioned prior to this script
+# and corresponding settings are also available, such as:
+# - $install_dir
+# - $port
+# - $POSTGRES_DB
+# ...
+
+#
+# $app is the app id (i.e. 'example' for first install,
+# or 'example__2', '__3', ... for multi-instance installs)
+#
+
+#=================================================
+# SETTINGS
+#=================================================
+ynh_script_progression --message="Storing installation settings..."
+
+# App settings:
+ynh_app_setting_set --app=$app --key=default_from_email --value="$default_from_email"
+ynh_app_setting_set --app=$app --key=admin_email --value="$admin_email"
+ynh_app_setting_set --app=$app --key=debug_enabled --value="$debug_enabled"
+ynh_app_setting_set --app=$app --key=log_level --value="$log_level"
+
+#=================================================
+# copy config files
+# ================================================
+ynh_script_progression --message="Create $app configuration files..."
+myynh_add_conf_files
+
+#=================================================
+# INTEGRATE SERVICE IN YUNOHOST
+#=================================================
+ynh_script_progression --message="Integrating service in YunoHost..."
+
+yunohost service add $app --description="$app"
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+ynh_script_progression --message="Set file permissions..."
+myynh_fix_file_permissions
+
+ynh_script_progression --message="Build '$app' docker images..." --weight=20
+myynh_setup_docker
+
+#=================================================
+# SETUP SYSTEMD
+#=================================================
+ynh_script_progression --message="Configuring systemd service '$app'..." --weight=5
+
+# https://yunohost.org/en/packaging_apps_helpers#ynh-add-systemd-config
+# https://github.com/YunoHost/yunohost/blob/dev/helpers/systemd
+ynh_add_systemd_config --service=$app --template="systemd.service"
+
+#=================================================
+# Start the app server via systemd
+#=================================================
+ynh_script_progression --message="Starting systemd service '$app'..." --weight=5
+
+ynh_systemd_action --service_name=$app --action="start"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring nginx web server..."
+
+# Create a dedicated nginx config
+# https://yunohost.org/en/contribute/packaging_apps/helpers
+# https://github.com/YunoHost/yunohost/blob/dev/helpers/nginx
+ynh_add_nginx_config "public_path" "port"
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression --message="Installation of $app completed" --last

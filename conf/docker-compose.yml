@@ -1,0 +1,77 @@
+#
+# Based on:
+# https://github.com/paperless-ngx/paperless-ngx/blob/main/docker/compose/docker-compose.postgres-tika.yml
+#
+version: "3.7"
+
+services:
+  broker:
+    # https://hub.docker.com/_/redis
+    image: docker.io/library/redis:7
+    restart: "no"
+    volumes:
+      - redisdata:/data
+
+  postgres:
+    # https://hub.docker.com/_/postgres
+    image: docker.io/library/postgres:15
+    restart: "no"
+    env_file: ./common.env
+    user: ${USERMAP_UID}:${USERMAP_GID}
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      #
+      # __DATA_DIR__ -> /home/yunohost.app/$app/
+      - __DATA_DIR__/volumes/postgresql-data/:/var/lib/postgresql/data/:rw
+
+  app:
+    # https://github.com/paperless-ngx/paperless-ngx/blob/dev/Dockerfile
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: "no"
+    depends_on:
+      - postgres
+      - broker
+      - gotenberg
+      - tika
+    ports:
+      - "__PORT__:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    user: ${USERMAP_UID}:${USERMAP_GID}
+    volumes:
+      # To use the YunoHost app user:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      #
+      # https://docs.paperless-ngx.com/configuration/#paths-and-folders
+      #
+      # __INSTALL_DIR__ -> /var/www/$app/
+      - __INSTALL_DIR__/media/:/usr/src/paperless/media
+      - __INSTALL_DIR__/static/:/usr/src/paperless/static
+      #
+      # __DATA_DIR__ -> /home/yunohost.app/$app/
+      - __DATA_DIR__/data/:/usr/src/paperless/data
+      - __DATA_DIR__/export:/usr/src/paperless/export
+      - __DATA_DIR__/consume:/usr/src/paperless/consume
+    env_file: ./common.env
+
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:7.10
+    restart: "no"
+
+    # The gotenberg chromium route is used to convert .eml files. We do not
+    # want to allow external content like tracking pixels or even javascript.
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+
+  tika:
+    image: ghcr.io/paperless-ngx/tika:latest
+    restart: "no"
+
+

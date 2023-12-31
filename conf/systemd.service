@@ -1,0 +1,19 @@
+[Unit]
+Description=__APP__ server
+After=containerd.service docker.service nginx.service
+
+[Service]
+User=__APP__
+Group=__APP__
+WorkingDirectory=__DATA_DIR__/
+
+# Will result in docker down + docker up
+ExecStart=make restart
+
+Restart=on-abort
+
+ExecReload=make restart
+ExecStop=make down
+
+[Install]
+WantedBy=multi-user.target
