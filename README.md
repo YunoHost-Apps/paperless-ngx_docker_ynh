@@ -33,8 +33,11 @@ Notes:
    * Redis
  * Use SystemD service file to start the Docker container
  * Use YunoHost system nginx as proxy
- * Store docker volumes (postgres database files) in `__DATA_DIR__` -> `/home/yunohost.app/$app/`
+ * Postgres database:
+   * Store database files under `__DATA_DIR__` in: `/home/yunohost.app/$app/volumes/postgresql-data/`
+   * Run Postgres as "App user/group" (So database files are owned by app user)
  * Serve static files from system nginx (From: `__INSTALL_DIR__` -> `/var/www/$app/`)
+
 
 Pull requests welcome ;)
 
