@@ -10,7 +10,8 @@ services:
     image: docker.io/library/redis:7
     restart: "no"
     volumes:
-      - redisdata:/data
+      # __DATA_DIR__ -> /home/yunohost.app/$app/
+      - __DATA_DIR__/volumes/redis-data/:/data:rw
 
   postgres:
     # https://hub.docker.com/_/postgres
@@ -26,8 +27,9 @@ services:
       - __DATA_DIR__/volumes/postgresql-data/:/var/lib/postgresql/data/:rw
 
   app:
-    # https://github.com/paperless-ngx/paperless-ngx/blob/dev/Dockerfile
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    build:
+        context: .
+        dockerfile: Dockerfile
     restart: "no"
     depends_on:
       - postgres
@@ -41,22 +43,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    user: ${USERMAP_UID}:${USERMAP_GID}
     volumes:
-      # To use the YunoHost app user:
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/group:/etc/group:ro
+      # Add YunoHost Django settings to $(pwd)
+      - ./paperless_ynh_settings.py:/usr/src/paperless/src/paperless_ynh_settings.py:ro
       #
       # https://docs.paperless-ngx.com/configuration/#paths-and-folders
       #
       # __INSTALL_DIR__ -> /var/www/$app/
-      - __INSTALL_DIR__/media/:/usr/src/paperless/media
-      - __INSTALL_DIR__/static/:/usr/src/paperless/static
+      - __INSTALL_DIR__/media/:/usr/src/paperless/media/
+      - __INSTALL_DIR__/static/:/usr/src/paperless/static/
       #
       # __DATA_DIR__ -> /home/yunohost.app/$app/
-      - __DATA_DIR__/data/:/usr/src/paperless/data
-      - __DATA_DIR__/export:/usr/src/paperless/export
-      - __DATA_DIR__/consume:/usr/src/paperless/consume
+      - __DATA_DIR__/volumes/data/:/usr/src/paperless/data/
+      - __DATA_DIR__/volumes/export/:/usr/src/paperless/export/
+      - __DATA_DIR__/volumes/consume/:/usr/src/paperless/consume/
     env_file: ./common.env
 
   gotenberg:
